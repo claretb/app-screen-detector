@@ -1,6 +1,7 @@
 {
-  "name": "live-perspective-transformator",
+  "name": "app-screen-detector",
   "version": "0.1.0",
+  "homepage": "https://gitname.github.io/app-screen-detector",
   "private": true,
   "dependencies": {
     "@techstark/opencv-js": "^4.6.0-release.1",
@@ -15,6 +16,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "start": "HTTPS=true react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
@@ -39,6 +42,7 @@
     ]
   },
   "devDependencies": {
+    "gh-pages": "^4.0.0",
     "react-app-rewired": "^2.2.1"
   }
 }
