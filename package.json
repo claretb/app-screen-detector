@@ -1,7 +1,7 @@
 {
   "name": "app-screen-detector",
   "version": "0.1.0",
-  "homepage": "https://gitname.github.io/app-screen-detector",
+  "homepage": "https://claretb.github.io/app-screen-detector",
   "private": true,
   "dependencies": {
     "@techstark/opencv-js": "^4.6.0-release.1",
