@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import './App.css'
 import Webcam from "react-webcam";
 import cv from "@techstark/opencv-js"
-import {AR} from "js-aruco"
+import { AR } from "js-aruco"
+import { Peer } from "peerjs";
 
 function App() {
-
+  const peer = new Peer();
+  var conn = null;
   const webcamRef = React.useRef(null);
   const videoConstraints = {
     height: 720,
@@ -139,6 +141,30 @@ function App() {
             bottomRightAruco = [centerX, centerY];
           }
         });
+      
+        drawCorners(markers, mainCtx);
+        drawId(markers, mainCtx);
+  
+        mainCtx.lineWidth = 3;
+        mainCtx.strokeStyle = "red";
+  
+        mainCtx.beginPath();
+        mainCtx.moveTo(topLeftAruco[0], topLeftAruco[1]);
+        mainCtx.lineTo(topRightAruco[0], topRightAruco[1]);
+        mainCtx.lineTo(bottomRightAruco[0], bottomRightAruco[1]);
+        mainCtx.lineTo(bottomLeftAruco[0], bottomLeftAruco[1]);
+        mainCtx.lineTo(topLeftAruco[0], topLeftAruco[1]);
+        mainCtx.stroke();
+  
+        var src = cv.matFromImageData(cameraImageData);
+        let dst = new cv.Mat();
+        let dsize = new cv.Size(500, 500);
+        let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [topLeftAruco[0], topLeftAruco[1], topRightAruco[0], topRightAruco[1], bottomLeftAruco[0], bottomLeftAruco[1], bottomRightAruco[0], bottomRightAruco[1]]);
+        let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 500, 0, 0, 500, 500, 500]);
+        let M = cv.getPerspectiveTransform(srcTri, dstTri);
+        cv.warpPerspective(src, dst, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+        cv.imshow('secondCanvas', dst);
+        src.delete(); dst.delete(); M.delete(); srcTri.delete(); dstTri.delete();
       }
       else {
         mainCtx.font = "20px Arial";
@@ -147,37 +173,19 @@ function App() {
 
         mainCtx.fillText("Make sure the camera reads all Aruco markers!", videoWidth / 2, videoHeight / 2);
       }
-      
-      drawCorners(markers, mainCtx);
-      drawId(markers, mainCtx);
 
-      mainCtx.lineWidth = 3;
-      mainCtx.strokeStyle = "red";
-
-      mainCtx.beginPath();
-      mainCtx.moveTo(topLeftAruco[0], topLeftAruco[1]);
-      mainCtx.lineTo(topRightAruco[0], topRightAruco[1]);
-      mainCtx.lineTo(bottomRightAruco[0], bottomRightAruco[1]);
-      mainCtx.lineTo(bottomLeftAruco[0], bottomLeftAruco[1]);
-      mainCtx.lineTo(topLeftAruco[0], topLeftAruco[1]);
-      mainCtx.stroke();
-
-      var src = cv.matFromImageData(cameraImageData);
-      let dst = new cv.Mat();
-      let dsize = new cv.Size(500, 500);
-      let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [topLeftAruco[0], topLeftAruco[1], topRightAruco[0], topRightAruco[1], bottomLeftAruco[0], bottomLeftAruco[1], bottomRightAruco[0], bottomRightAruco[1]]);
-      let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 500, 0, 0, 500, 500, 500]);
-      let M = cv.getPerspectiveTransform(srcTri, dstTri);
-      cv.warpPerspective(src, dst, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-      cv.imshow('secondCanvas', dst);
-      src.delete(); dst.delete(); M.delete(); srcTri.delete(); dstTri.delete();
-
-      setTimeout(() => startProcess(), 10);
+      setTimeout(() => startProcess(), 100);
     }
 
     image.src = imageSrc;
 
   };
+
+  function moveCar(btn) {
+    if (conn != null) {
+      conn.send(btn);
+    }
+  }
 
   useEffect(() => {
     function checkWebcam() {
@@ -185,6 +193,19 @@ function App() {
         setTimeout(() => checkWebcam(), 10);
       }
       else {
+        const queryParams = new URLSearchParams(window.location.search);
+        const peerID = queryParams.get("peerID");
+
+        conn = peer.connect(peerID);
+        conn.on("open", () => {
+          conn.send("Mobile phone connected.");
+          console.log("Connected.");
+        });
+
+        conn.on("data", (data) => {
+          console.log("This came from app: " + data);
+        });
+        
         startProcess();
       }
     }
@@ -220,6 +241,18 @@ function App() {
           height={500}
           style={{ backgroundColor: "transparent" }}
         />
+        <button style={{ marginLeft: "175px", marginRight: "175px", width:"30%"  }} onClick={() => moveCar("forward")}>
+          Forward
+        </button>
+        <button style={{ marginLeft: "25px", width:"30%" }} onClick={() => moveCar("left")}>
+          Left
+        </button>
+        <button style={{ marginLeft: "0px", width:"30%" }} onClick={() => moveCar("back")}>
+          Back
+        </button>
+        <button style={{ marginLeft: "0px", width:"30%" }} onClick={() => moveCar("right")}>
+          Right
+        </button>
       </div>
     </div>
   );
