@@ -4,6 +4,7 @@ import Webcam from "react-webcam";
 import cv from "@techstark/opencv-js"
 import { AR } from "js-aruco"
 import { Peer } from "peerjs";
+import Button from '@mui/material/Button';
 
 function App() {
   const peer = new Peer();
@@ -11,13 +12,16 @@ function App() {
   const webcamRef = React.useRef(null);
   const videoConstraints = {
     height: 720,
-    width: 1200,
+    width: 1280,
     // My external cam deviceId.
     // deviceId: "a97bd76dd673920b79ce367c49f172e4a76a3f968b205819dc73f01e52d79d19",
     facingMode: "environment",
     screenshotQuality: 1
   };
   const ghostCanvas = document.createElement("canvas");
+  const resultWidth = 700;
+  const resultHeight = 700;
+  const showButtons = true;
 
   function drawCorners(markers, context){
     var corners, corner, i, j;
@@ -101,12 +105,6 @@ function App() {
         mainCanvas.width,
         mainCanvas.height
       );
-      
-      // These are my defaults.
-      // var topLeftAruco = [90, 10];
-      // var topRightAruco = [310, 220];
-      // var bottomRightAruco = [270, 540];
-      // var bottomLeftAruco = [5, 480];
 
       var topLeftAruco = [0, 0];
       var topRightAruco = [0, 0];
@@ -119,26 +117,18 @@ function App() {
 
       if (markers.length > 3) {
         markers.forEach(marker => {
-          var sumX = 0;
-          var sumY = 0;
-          marker.corners.forEach(corner => {
-            sumX += corner.x;
-            sumY += corner.y;
-          });
-          var centerX =sumX / 4;
-          var centerY =sumY / 4;
 
           if (marker.id == 819) {
-            topLeftAruco = [centerX, centerY];
+            topLeftAruco = [marker.corners[2].x, marker.corners[2].y];
           }
           else if (marker.id == 273) {
-            topRightAruco = [centerX, centerY];
+            topRightAruco = [marker.corners[3].x, marker.corners[3].y];
           }
           else if (marker.id == 61) {
-            bottomLeftAruco = [centerX, centerY];
+            bottomLeftAruco = [marker.corners[1].x, marker.corners[1].y];
           }
           else if (marker.id == 922) {
-            bottomRightAruco = [centerX, centerY];
+            bottomRightAruco = [marker.corners[0].x, marker.corners[0].y];
           }
         });
       
@@ -158,9 +148,9 @@ function App() {
   
         var src = cv.matFromImageData(cameraImageData);
         let dst = new cv.Mat();
-        let dsize = new cv.Size(500, 500);
+        let dsize = new cv.Size(resultWidth, resultHeight);
         let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [topLeftAruco[0], topLeftAruco[1], topRightAruco[0], topRightAruco[1], bottomLeftAruco[0], bottomLeftAruco[1], bottomRightAruco[0], bottomRightAruco[1]]);
-        let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 500, 0, 0, 500, 500, 500]);
+        let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, resultWidth, 0, 0, resultHeight, resultWidth, resultHeight]);
         let M = cv.getPerspectiveTransform(srcTri, dstTri);
         cv.warpPerspective(src, dst, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
         cv.imshow('secondCanvas', dst);
@@ -174,7 +164,7 @@ function App() {
         mainCtx.fillText("Make sure the camera reads all Aruco markers!", videoWidth / 2, videoHeight / 2);
       }
 
-      setTimeout(() => startProcess(), 100);
+      setTimeout(() => startProcess(), 500);
     }
 
     image.src = imageSrc;
@@ -215,7 +205,7 @@ function App() {
   return (
 
     <div>
-      <div style={{ position: "absolute" }}>
+      <div style={{ position: "absolute", width: "1440px", height: "1280px"}}>
         <Webcam
           audio={false}
           id="img"
@@ -224,35 +214,42 @@ function App() {
           screenshotFormat="image/jpeg"
           videoConstraints={videoConstraints}
           mirrored={false}
+          style={{ marginLeft: "25%" }}
         />
       </div>
-      <div style={{ position: "absolute"/*, marginTop: "720px"*/ }}>
+      <div style={{ position: "absolute", width: "1440px", height: "1280px"}}>
         <canvas
           id="mainCanvas"
           width={720}
-          height={1200}
-          style={{ backgroundColor: "transparent" }}
+          height={1280}
+          style={{ backgroundColor: "transparent", marginLeft: "25%" }}
         />
       </div>
-      <div style={{ position: "absolute", marginLeft: "720px" }}>
+      <div style={{ position: "absolute", marginTop: "1280px", width: "1440px" }}>
         <canvas
           id="secondCanvas"
-          width={500}
-          height={500}
-          style={{ backgroundColor: "transparent" }}
+          width={resultWidth}
+          height={resultHeight}
+          style={{ backgroundColor: "transparent", marginLeft: "220px"}}
         />
-        <button style={{ marginLeft: "175px", marginRight: "175px", width:"30%"  }} onClick={() => moveCar("forward")}>
-          Forward
-        </button>
-        <button style={{ marginLeft: "25px", width:"30%" }} onClick={() => moveCar("left")}>
-          Left
-        </button>
-        <button style={{ marginLeft: "0px", width:"30%" }} onClick={() => moveCar("back")}>
-          Back
-        </button>
-        <button style={{ marginLeft: "0px", width:"30%" }} onClick={() => moveCar("right")}>
-          Right
-        </button>
+        {showButtons && <>
+        <div>
+          <Button variant="contained" style={{ marginLeft: "35%", width:"30%", height:"250px" }} onClick={() => moveCar("forward")}>
+            Forward
+          </Button>
+        </div>
+        <div style={{marginTop: "5px"}}>
+          <Button variant="contained" style={{ marginLeft: "67px", width:"30%", height:"250px" }} onClick={() => moveCar("left")}>
+            Left
+          </Button>
+          <Button variant="contained" style={{ marginLeft: "5px", width:"30%", height:"250px" }} onClick={() => moveCar("back")}>
+            Back
+          </Button>
+          <Button variant="contained" style={{ marginLeft: "5px", width:"30%", height:"250px" }} onClick={() => moveCar("right")}>
+            Right
+          </Button>
+        </div>
+        </>}
       </div>
     </div>
   );
