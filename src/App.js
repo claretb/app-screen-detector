@@ -63,7 +63,7 @@ function App() {
   }
 
   const setModelHttps = async () => {
-    model = await tf.loadLayersModel();
+    model = await tf.loadLayersModel("https://raw.githubusercontent.com/claretb/app-screen-detector/master/model/model.json");
     console.log("Model set.");
   }
 
@@ -281,7 +281,6 @@ function App() {
       }
       else {
         if (conn === null) {
-          console.log("conn set")
           const queryParams = new URLSearchParams(window.location.search);
           const peerID = queryParams.get("peerID");
 
